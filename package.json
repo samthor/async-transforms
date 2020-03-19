@@ -1,0 +1,10 @@
+{
+  "name": "async-transforms",
+  "version": "1.0.0",
+  "description": "Asynchronous stream transforms",
+  "main": "index.js",
+  "type": "module",
+  "repository": "https://github.com/samthor/async-transforms",
+  "author": "Sam Thorogood <sam.thorogood@gmail.com>",
+  "license": "Apache-2.0"
+}
