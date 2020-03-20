@@ -2,7 +2,7 @@ import mocha from 'mocha';
 import chai from 'chai';
 import path from 'path';
 import stream from 'stream';
-import * as transforms from '../transforms.js';
+import * as transforms from '../lib/transforms.js';
 import * as worker from '../lib/worker.js';
 
 const {suite, test} = mocha;

@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Asynchronous stream transforms",
   "type": "module",
-  "module": "./transforms.js",
+  "module": "./lib/transforms.js",
   "main": "./dist/transforms.cjs",
   "exports": {
-    "import": "./transforms.js",
+    "import": "./lib/transforms.js",
     "default": "./dist/transforms.cjs"
   },
   "repository": "https://github.com/samthor/async-transforms",
@@ -18,7 +18,7 @@
     "rollup": "^2.1.0"
   },
   "scripts": {
-    "prepare": "rollup --format=cjs --file=dist/transforms.cjs -- transforms.js",
+    "prepare": "rollup --format=cjs --file=dist/transforms.cjs -- lib/transforms.js",
     "test": "mocha"
   }
 }
