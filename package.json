@@ -4,10 +4,14 @@
   "description": "Asynchronous stream transforms",
   "type": "module",
   "module": "./lib/transforms.js",
-  "main": "./dist/transforms.cjs",
+  "main": "./require/transforms.cjs",
   "exports": {
     "import": "./lib/transforms.js",
-    "default": "./dist/transforms.cjs"
+    "require": "./require/transforms.cjs",
+    "./worker": {
+      "import": "./lib/worker.js",
+      "require": "./require/worker.cjs"
+    }
   },
   "repository": "https://github.com/samthor/async-transforms",
   "author": "Sam Thorogood <sam.thorogood@gmail.com>",
@@ -18,7 +22,7 @@
     "rollup": "^2.1.0"
   },
   "scripts": {
-    "prepare": "rollup --format=cjs --file=dist/transforms.cjs -- lib/transforms.js",
+    "prepare": "bash build.sh",
     "test": "mocha"
   }
 }

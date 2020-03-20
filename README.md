@@ -64,3 +64,33 @@ exports.default = () => {
 ```
 
 While Gulp plugins for Less already exist, this makes it easier to write general-purpose, modern plugins with `async` and `await` syntax.
+
+## Worker Pool
+
+This includes a submodule which provides a worker pool.
+It's useful when combined with the above transforms handler.
+For example:
+
+```js
+import {pool} from 'async-transforms/worker';
+
+const compilationPool = pool(path.resolve('./compile.js'));
+
+// use directly
+compilationPool(123, {tasks: 2})
+    .then((result) => console.info('result from passing value to worker', result));
+
+// or as part of a transform
+stream.Readable.from([object1, object2])
+    .pipe(transforms.map(compilationPool))
+    .pipe(transforms.map(() => {
+      // do something with the result
+    }));
+```
+
+The pool invokes the default export (or `module.exports` for CJS) of the target file.
+By default, it utilizes 75% of your local CPUs, but set `tasks` to control this—use a fraction from 0-1 to set a ratio, and higher for absolute.
+
+Use this for CPU-bound tasks like JS minification.
+
+This doesn't really belong in this module, 

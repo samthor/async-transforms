@@ -1,2 +1,3 @@
-test.js
+test/
+build.sh
 .travis.yml
