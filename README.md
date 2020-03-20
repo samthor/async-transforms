@@ -93,4 +93,4 @@ By default, it utilizes 75% of your local CPUs, but set `tasks` to control thisâ
 
 Use this for CPU-bound tasks like JS minification.
 
-This doesn't really belong in this module, 
+This doesn't really belong in this module.
