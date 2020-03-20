@@ -1,7 +1,9 @@
 import mocha from 'mocha';
 import chai from 'chai';
+import path from 'path';
 import stream from 'stream';
-import * as transforms from './transforms.js';
+import * as transforms from '../transforms.js';
+import * as worker from '../lib/worker.js';
 
 const {suite, test} = mocha;
 const {assert} = chai;
@@ -184,5 +186,17 @@ suite('transforms', () => {
     assert.equal(arr.length, 2);
     assert.equal(arr[0].toString('utf8'), ' oo');
     assert.equal(arr[1].toString('utf8'), ' ar');
+  });
+
+  test('worker', async () => {
+    const r = stream.Readable.from([5, 6, 7]);
+
+    const absolutePath = String(import.meta.url).replace(/^file:\/\//, '');
+    const dirname = path.dirname(absolutePath);
+
+    const ext = worker.pool(path.join(dirname, './lib/worker.js'), {tasks: 2});
+    const s = r.pipe(transforms.map(ext));
+
+    assert.sameMembers(await resultOf(s), [15, 16, 17]);
   });
 });
