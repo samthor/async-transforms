@@ -33,6 +33,7 @@ export function map(handler, options={}) {
   let count = 0;
   let flushCallback = null;
 
+  options.tasks = Math.ceil(options.tasks) || 0;
   const hasTasks = options.tasks > 0;
   const pending = [];
 
@@ -113,7 +114,7 @@ export function map(handler, options={}) {
       const {chunk, encoding} = pending.shift();
       internalTransform(chunk, encoding);
     } else if (count === 0 && flushCallback) {
-      // this is safe as `else if`, as calling internalTransform again will ensure count > 0
+      // this is safe as `else if`, as calling internalTransform again means count > 0
       flushCallback();
     }
   }
