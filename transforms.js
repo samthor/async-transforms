@@ -1,14 +1,12 @@
 import stream from 'stream';
 
 const filterSymbol = Symbol('filter');
-const validUtfLabels = ['utf-8', 'utf8', 'unicode-1-1-utf-8'];
 
 
-function validateChunk(chunk, encoding) {
-  if (encoding && (typeof encoding !== 'string' || !validUtfLabels.includes(encoding.toLowerCase()))) {
-    throw new TypeError(`unsupported encoding, expected UTF-8: ${encoding}`);
-  }
-}
+/**
+ * If returned by the map function, will skip this item in the final output.
+ */
+export const skip = filterSymbol;
 
 
 /**
@@ -49,7 +47,6 @@ export function map(handler, options={}) {
       if (flushCallback !== null) {
         throw new Error(`got transform() after flush()`);
       }
-      validateChunk(chunk, encoding);
 
       callback();
 
@@ -71,49 +68,54 @@ export function map(handler, options={}) {
 
   return s;
 
-  // hoisted above
+  // hoisted methods below
+
   function internalTransform(chunk, encoding) {
     ++count;
     const localIndex = index++;
+    const resultHandler = internalResultHandler.bind(null, localIndex, chunk);
+    Promise.resolve()
+        .then(() => handler(chunk, localIndex))
+        .then(resultHandler)
+        .catch((err) => s.destroy(err));
+  }
 
-    Promise.resolve(handler(chunk, localIndex)).then((result) => {
-      if (result == null) {
-        result = chunk;  // disallow null/undefined as they stop streams
+  function internalResultHandler(localIndex, chunk, result) {
+    if (result == null) {
+      result = chunk;  // disallow null/undefined as they stop streams
+    }
+
+    if (options.order) {
+      const doneIndex = localIndex - orderPushCount;
+      orderDone[doneIndex] = result;
+
+      // If we're the first, ship ourselves and any further completed chunks.
+      if (doneIndex === 0) {
+        let i = doneIndex;
+        do {
+          if (orderDone[i] !== filterSymbol) {
+            s.push(orderDone[i]);
+          }
+          ++i;
+        } while (i < orderDone.length && orderDone[i] !== undefined);
+
+        // Splice at once, in case we hit many valid elements.
+        orderDone.splice(0, i);
+        orderPushCount += i;
       }
+    } else if (result !== filterSymbol) {
+      s.push(result);  // we don't care about the order, push immediately
+    }
 
-      if (options.order) {
-        const doneIndex = localIndex - orderPushCount;
-        orderDone[doneIndex] = result;
+    --count;
 
-        // If we're the first, ship ourselves and any further completed chunks.
-        if (doneIndex === 0) {
-          let i = doneIndex;
-          do {
-            if (orderDone[i] !== filterSymbol) {
-              s.push(orderDone[i]);
-            }
-            ++i;
-          } while (i < orderDone.length && orderDone[i] !== undefined);
-
-          // Splice at once, in case we hit many valid elements.
-          orderDone.splice(0, i);
-          orderPushCount += i;
-        }
-      } else if (result !== filterSymbol) {
-        s.push(result);  // we don't care about the order, push immediately
-      }
-
-      --count;
-
-      if (pending.length && count < options.tasks) {
-        const {chunk, encoding} = pending.shift();
-        internalTransform(chunk, encoding);
-      } else if (count === 0 && flushCallback) {
-        // this is safe as `else if`, as calling internalTransform again will ensure count > 0
-        flushCallback();
-      }
-
-    }).catch((err) => s.destroy(err));
+    if (pending.length && count < options.tasks) {
+      const {chunk, encoding} = pending.shift();
+      internalTransform(chunk, encoding);
+    } else if (count === 0 && flushCallback) {
+      // this is safe as `else if`, as calling internalTransform again will ensure count > 0
+      flushCallback();
+    }
   }
 }
 
@@ -153,7 +155,6 @@ export function gate(handler, options={}) {
     objectMode: options.objectMode,
 
     transform(chunk, encoding, callback) {
-      validateChunk(chunk, encoding);
       chunks.push(chunk);
       callback();
     },
@@ -174,3 +175,15 @@ export function gate(handler, options={}) {
   });
 }
 
+
+/**
+ * Returns a helper that generates an Array from piped data.
+ */
+export function toArray(options) {
+  let s;
+  const promise = new Promise((resolve, reject) => {
+    s = gate((arr) => resolve(arr), options);
+    s.on('error', reject);
+  });
+  return {stream: s, promise};
+}
