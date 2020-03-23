@@ -6,8 +6,10 @@
   "module": "./lib/transforms.js",
   "main": "./require/transforms.cjs",
   "exports": {
-    "import": "./lib/transforms.js",
-    "require": "./require/transforms.cjs",
+    ".": {
+      "import": "./lib/transforms.js",
+      "require": "./require/transforms.cjs"
+    },
     "./worker": {
       "import": "./lib/worker.js",
       "require": "./require/worker.cjs"
