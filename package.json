@@ -5,10 +5,11 @@
   "type": "module",
   "module": "./lib/transforms.js",
   "main": "./require/transforms.cjs",
+  "types": "src/index.d.ts",
   "exports": {
     ".": {
       "import": "./src/index.js",
-      "require": "./index.cjs"
+      "require": "./require/index.cjs"
     },
     "./worker": {
       "import": "./src/worker/index.js",
@@ -27,7 +28,7 @@
     "prepare": "bash build.sh",
     "test": "mocha"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "@types/node": "^14.14.20"
   }
 }
