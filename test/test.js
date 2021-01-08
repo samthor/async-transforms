@@ -2,8 +2,8 @@ import mocha from 'mocha';
 import chai from 'chai';
 import path from 'path';
 import stream from 'stream';
-import * as transforms from '../lib/transforms.js';
-import * as worker from '../lib/worker.js';
+import * as transforms from '../src/index.js';
+import * as worker from '../src/worker/index.js';
 
 const {suite, test} = mocha;
 const {assert} = chai;

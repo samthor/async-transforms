@@ -1,2 +1,5 @@
-node_modules/
-require/
+/node_modules/
+*.cjs
+/index.d.ts
+/index.js
+/worker/

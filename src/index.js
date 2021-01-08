@@ -144,16 +144,13 @@ export function filter(handler, options={}) {
  * This assumes object mode and does not validate or check encoding.
  *
  * @param {function(!Array<?>): (!Array<?>|!Promise<!Array<?>>}
+ * @return {!stream.Transform}
  */
-export function gate(handler, options={}) {
-  options = Object.assign({
-    objectMode: true,
-  }, options);
-
+export function gate(handler) {
   const chunks = [];
 
   return new stream.Transform({
-    objectMode: options.objectMode,
+    objectMode: true,
 
     transform(chunk, encoding, callback) {
       chunks.push(chunk);
@@ -178,9 +175,9 @@ export function gate(handler, options={}) {
 
 
 /**
- * Returns a helper that generates an Array from piped data.
+ * Returns a helper that generates an Array from piped data. This assumes object mode.
  */
-export function toArray(options) {
+export function toArray() {
   let s;
   const promise = new Promise((resolve, reject) => {
     s = gate((arr) => resolve(arr), options);

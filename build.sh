@@ -2,7 +2,15 @@
 
 set -eu
 
-for SRC in lib/*.js; do
-  BASE=$(basename $SRC)
-  node_modules/.bin/rollup --format=cjs --file=require/${BASE%.*}.cjs -- lib/$BASE
+cd src
+
+for SRC in **/*.js *.js; do
+  echo $SRC
+  ../node_modules/.bin/rollup --format=cjs --file=../${SRC%.*}.cjs -- $SRC
 done
+
+touch ../worker/index.js
+cp worker/index.d.ts ../worker/index.d.ts
+
+touch ../index.js
+cp index.d.ts ../index.d.ts

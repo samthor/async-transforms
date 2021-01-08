@@ -1,18 +1,18 @@
 {
   "name": "async-transforms",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Asynchronous stream transforms",
   "type": "module",
   "module": "./lib/transforms.js",
   "main": "./require/transforms.cjs",
   "exports": {
     ".": {
-      "import": "./lib/transforms.js",
-      "require": "./require/transforms.cjs"
+      "import": "./src/index.js",
+      "require": "./index.cjs"
     },
     "./worker": {
-      "import": "./lib/worker.js",
-      "require": "./require/worker.cjs"
+      "import": "./src/worker/index.js",
+      "require": "./require/worker/index.cjs"
     }
   },
   "repository": "https://github.com/samthor/async-transforms",
@@ -26,5 +26,8 @@
   "scripts": {
     "prepare": "bash build.sh",
     "test": "mocha"
+  },
+  "dependencies": {
+    "@types/node": "^14.14.20"
   }
 }
