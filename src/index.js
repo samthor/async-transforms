@@ -180,7 +180,7 @@ export function gate(handler) {
 export function toArray() {
   let s;
   const promise = new Promise((resolve, reject) => {
-    s = gate((arr) => resolve(arr), options);
+    s = gate((arr) => resolve(arr));
     s.on('error', reject);
   });
   return {stream: s, promise};
