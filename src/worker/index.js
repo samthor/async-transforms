@@ -28,21 +28,23 @@ const workerTarget = path.join(scriptDir, './internal-worker.' + (isModule ? 'js
 
 /**
  * @param {string} dep to run script from
- * @param {{tasks?: number, expiry?: number}} options
+ * @param {Partial<import('.').PoolOptions>} options
  * @return {function(...any): Promise<any>}
  */
 export function pool(dep, options) {
-  options = Object.assign({
+  /** @type {import('.').PoolOptions} */
+  const o = Object.assign({
+    minTasks: 1,
     tasks: cpuCount * 0.75,
     expiry: 1000,
   }, options);
 
-  options.expiry = Math.max(options.expiry, 0) || 0;
+  o.expiry = Math.max(o.expiry, 0) || 0;
 
-  if (options.tasks > 0 && options.tasks < 1) {
-    options.tasks = cpuCount * options.tasks;
+  if (o.tasks > 0 && o.tasks < 1) {
+    options.tasks = cpuCount * o.tasks;
   }
-  options.tasks = Math.max(Math.ceil(options.tasks), 0) || 1;
+  options.tasks = Math.max(Math.ceil(o.tasks), 0) || 1;
 
   if (!path.isAbsolute(dep)) {
     throw new TypeError(`cannot load worker with relative path: ${dep}`);
@@ -50,10 +52,10 @@ export function pool(dep, options) {
 
   let activeWorkers = 0;
 
-  /** @type {Map<worker.Worker, number>} */
+  /** @type {Map<worker.Worker, NodeJS.Timeout>} */
   const availableWorkers = new Map();
 
-  /** @type {{args: any[], resolve: (any) => void}[]} */
+  /** @type {{args: any[], resolve: (arg: any) => void}[]} */
   const pendingTasks = [];
 
   return async (...args) => {
@@ -61,13 +63,11 @@ export function pool(dep, options) {
     let w;
 
     if (availableWorkers.size) {
-      for (w of availableWorkers.keys()) {
-        break;  // get 1st worker from map
-      }
-      const timeout = availableWorkers.get(w);
+      w = availableWorkers.keys().next().value;
+      const timeout = /** @type {NodeJS.Timeout} */ (availableWorkers.get(w));
       availableWorkers.delete(w);
       clearTimeout(timeout);
-    } else if (activeWorkers < options.tasks) {
+    } else if (activeWorkers < o.tasks) {
       if (isModule) {
         w = new worker.Worker(workerTarget, {workerData: {dep}});
       } else {
@@ -99,6 +99,7 @@ export function pool(dep, options) {
     w.postMessage({args, port: port2}, [port2]);
 
     return new Promise((resolve, reject) => {
+      /** @type {(arg: {result: any, error: Error}) => void} */
       const handler = ({result, error}) => {
         port1.off('message', handler);  // important to allow GC
         port1.close();
@@ -112,7 +113,7 @@ export function pool(dep, options) {
   /**
    * @param {worker.Worker} w
    */
-  function terimateWorker(w) {
+  function maybeTerimateWorker(w) {
     --activeWorkers;
     w.terminate();
     availableWorkers.delete(w);
@@ -122,16 +123,17 @@ export function pool(dep, options) {
    * @param {worker.Worker} w
    */
   function releaseWorker(w) {
-    if (pendingTasks.length) {
+    const immediateTask = pendingTasks.shift();
+    if (immediateTask) {
       // There's an immediate task, consume it and go.
-      const {args, resolve} = pendingTasks.shift();
+      const {args, resolve} = immediateTask;
       resolve(enact(w, args));
-    } else if (options.expiry) {
+    } else if (o.expiry) {
       // Otherwise, put it into our queue to be deleted soon.
-      const timeout = setTimeout(terimateWorker.bind(null, w), options.expiry);
+      const timeout = setTimeout(maybeTerimateWorker.bind(null, w), o.expiry);
       availableWorkers.set(w, timeout);
     } else {
-      terimateWorker(w);
+      maybeTerimateWorker(w);
     }
   }
 }

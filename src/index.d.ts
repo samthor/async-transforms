@@ -2,9 +2,9 @@
 /// <reference types="node" />
 
 export interface Options {
-  objectMode?: boolean;
-  order?: boolean;
-  tasks?: number;
+  objectMode: boolean;
+  order: boolean;
+  tasks: number;
 }
 
 /**
@@ -21,13 +21,13 @@ export const skip: Symbol;
  * By default, this operates in objectMode, and does not guarantee that the output order matches
  * the input order.
  */
-export function map(handler: (arg: any, index: number) => any, options?: Options): stream.Transform;
+export function map(handler: (arg: any, index: number) => any, options?: Partial<Options>): stream.Transform;
 
 /**
  * As per map, but returning falsey values will remove this from the stream. Returning a truthy
  * value will include it.
  */
-export function filter(handler: (arg: any, index: number) => boolean|Promise<boolean>, options?: Options): stream.Transform;
+export function filter(handler: (arg: any, index: number) => boolean|Promise<boolean>, options?: Partial<Options>): stream.Transform;
 
 /**
  * Asynchronously process all data passed through this stream prior to 'flush' being invoked. This

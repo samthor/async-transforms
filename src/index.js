@@ -19,11 +19,12 @@ export const skip = filterSymbol;
  * the input order.
  *
  * @param {function(?, number): ?} handler
- * @param {{objectMode: boolean, order: boolean, tasks: number}=} options
+ * @param {Partial<import('.').Options>=} options
  * @return {!stream.Transform}
  */
-export function map(handler, options={}) {
-  options = Object.assign({
+export function map(handler, options) {
+  /** @type {import('.').Options} */
+  const o = Object.assign({
     objectMode: true,
     order: false,
     tasks: 0,
@@ -31,17 +32,23 @@ export function map(handler, options={}) {
 
   let index = 0;
   let count = 0;
+
+  /** @type {stream.TransformCallback?} */
   let flushCallback = null;
 
-  options.tasks = Math.ceil(options.tasks) || 0;
-  const hasTasks = options.tasks > 0;
+  o.tasks = Math.ceil(o.tasks) || 0;
+  const hasTasks = o.tasks > 0;
+
+  /** @type {{chunk: any, encoding: string}[]} */
   const pending = [];
 
   let orderPushCount = 0;
+
+  /** @type {any[]} */
   const orderDone = [];
 
   const s = new stream.Transform({
-    objectMode: options.objectMode,
+    objectMode: o.objectMode,
     // nb. Passing writeableHighWaterMark here seems to do nothing, we just enforce tasks manually.
 
     transform(chunk, encoding, callback) {
@@ -51,7 +58,7 @@ export function map(handler, options={}) {
 
       callback();
 
-      if (!hasTasks || count < options.tasks) {
+      if (!hasTasks || count < o.tasks) {
         internalTransform(chunk, encoding);
       } else {
         pending.push({chunk, encoding});
@@ -71,6 +78,10 @@ export function map(handler, options={}) {
 
   // hoisted methods below
 
+  /**
+   * @param {any} chunk
+   * @param {string} encoding
+   */
   function internalTransform(chunk, encoding) {
     ++count;
     const localIndex = index++;
@@ -81,12 +92,17 @@ export function map(handler, options={}) {
         .catch((err) => s.destroy(err));
   }
 
+  /**
+   * @param {number} localIndex
+   * @param {any} chunk
+   * @param {any} result
+   */
   function internalResultHandler(localIndex, chunk, result) {
     if (result == null) {
       result = chunk;  // disallow null/undefined as they stop streams
     }
 
-    if (options.order) {
+    if (o.order) {
       const doneIndex = localIndex - orderPushCount;
       orderDone[doneIndex] = result;
 
@@ -110,8 +126,8 @@ export function map(handler, options={}) {
 
     --count;
 
-    if (pending.length && count < options.tasks) {
-      const {chunk, encoding} = pending.shift();
+    if (pending.length && count < o.tasks) {
+      const {chunk, encoding} = /** @type {typeof pending[0]} */ (pending.shift());
       internalTransform(chunk, encoding);
     } else if (count === 0 && flushCallback) {
       // this is safe as `else if`, as calling internalTransform again means count > 0
@@ -126,12 +142,12 @@ export function map(handler, options={}) {
  * value will include it.
  *
  * @param {function(?, number): ?} handler
- * @param {{objectMode: boolean, order: boolean, tasks: number}=} options
+ * @param {Partial<import('.').Options>=} options
  * @return {!stream.Transform}
  */
-export function filter(handler, options={}) {
-  return map(async (chunk) => {
-    const result = await handler(chunk);
+export function filter(handler, options) {
+  return map(async (chunk, i) => {
+    const result = await handler(chunk, i);
     return result ? chunk : filterSymbol;
   }, options);
 }
@@ -143,10 +159,11 @@ export function filter(handler, options={}) {
  *
  * This assumes object mode and does not validate or check encoding.
  *
- * @param {function(!Array<?>): (!Array<?>|!Promise<!Array<?>>}
+ * @param {function(!Array<?>): (!Array<?>|!Promise<!Array<?>>)} handler
  * @return {!stream.Transform}
  */
 export function gate(handler) {
+  /** @type {any[]} */
   const chunks = [];
 
   return new stream.Transform({
@@ -179,8 +196,12 @@ export function gate(handler) {
  */
 export function toArray() {
   let s;
+  /** @type {Promise<any[]>} */
   const promise = new Promise((resolve, reject) => {
-    s = gate((arr) => resolve(arr));
+    s = gate((arr) => {
+      resolve(arr);
+      return [];
+    });
     s.on('error', reject);
   });
   return {stream: s, promise};

@@ -11,7 +11,6 @@ const {assert} = chai;
 
 /**
  * @param {!stream.Readable} s
- * @return {{stream: !stream.Transform, promise: !Promise<!Array<?>>}}
  */
 function resultOf(s) {
   const {stream: check, promise: arrayPromise} = transforms.toArray();
@@ -36,6 +35,9 @@ suite('transforms', () => {
   test('map', async () => {
     const r = stream.Readable.from([1, 2, 3]);
 
+    /**
+     * @param {number} x
+     */
     const handler = async (x) => {
       return x + 1;
     };
@@ -65,6 +67,9 @@ suite('transforms', () => {
     const r = stream.Readable.from([1, 2, 3]);
     const pending = [];
 
+    /**
+     * @param {number} x
+     */
     const handler = (x) => {
       return new Promise((r) => {
         pending.unshift(() => r(x + 1));
@@ -82,6 +87,9 @@ suite('transforms', () => {
     const r = stream.Readable.from([1, 2, 3]);
     const pending = [];
 
+    /**
+     * @param {number} x
+     */
     const handler = (x) => {
       return new Promise((r) => {
         pending.unshift(() => r(x + 1));
@@ -102,17 +110,28 @@ suite('transforms', () => {
     let yDone = false;
 
     const handlers = [
+      /**
+       * @param {number} x
+       */
       async (x) => {
         await new Promise((r) => setImmediate(r));
         assert.isFalse(zCalled);
         assert.isFalse(yDone);
         return x + 1;
       },
+
+      /**
+       * @param {number} y
+       */
       async (y) => {
         await new Promise((r) => setImmediate(r));
         yDone = true;
         return y + 1;
       },
+
+      /**
+       * @param {number} z
+       */
       async (z) => {
         zCalled = true;
         return z + 1;

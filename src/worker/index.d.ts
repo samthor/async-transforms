@@ -1,17 +1,23 @@
 
 
 export interface PoolOptions {
+
+  /**
+   * Minimum number of tasks to keep around.
+   */
+  minTasks: number,
+
   /**
    * Maximum number of tasks to use. Default is 75% of your CPU count, rounded up, with a minimum
    * of one.
    */
-  tasks?: number,
+  tasks: number,
 
   /**
    * Kill an inactive task after this amount of time. Default is zero (but will be reused if
    * there's immediately pending tasks), increase if your tasks have high setup costs.
    */
-  expiry?: number,
+  expiry: number,
 }
 
 /**
@@ -19,4 +25,4 @@ export interface PoolOptions {
  * @param options
  * @return callable to add work
  */
-export function pool(dep: string, options?: PoolOptions): (...any) => Promise<any>;
+export function pool(dep: string, options?: Partial<PoolOptions>): (...any) => Promise<any>;
