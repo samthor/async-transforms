@@ -42,9 +42,10 @@ export function pool(dep, options) {
   o.expiry = Math.max(o.expiry, 0) || 0;
 
   if (o.tasks > 0 && o.tasks < 1) {
-    options.tasks = cpuCount * o.tasks;
+    o.tasks = cpuCount * o.tasks;
   }
-  options.tasks = Math.max(Math.ceil(o.tasks), 0) || 1;
+  o.tasks = Math.max(Math.ceil(o.tasks), 0) || 1;
+  o.minTasks = Math.max(0, Math.min(o.tasks, ~~o.minTasks));
 
   if (!path.isAbsolute(dep)) {
     throw new TypeError(`cannot load worker with relative path: ${dep}`);
@@ -52,40 +53,44 @@ export function pool(dep, options) {
 
   let activeWorkers = 0;
 
-  /** @type {Map<worker.Worker, NodeJS.Timeout>} */
+  /** @type {Map<worker.Worker, NodeJS.Timeout|undefined>} */
   const availableWorkers = new Map();
+
+  const prepareWorker = () => {
+    ++activeWorkers;
+    const w = createWorker(dep);
+    w.on('message', ({ok}) => {
+      if (ok !== true) {
+        throw new Error(`got non-ok: ${ok}`);
+      }
+      releaseWorker(w);
+    });
+  };
+  for (let i = 0; i < o.minTasks; ++i) {
+    prepareWorker();
+  }
 
   /** @type {{args: any[], resolve: (arg: any) => void}[]} */
   const pendingTasks = [];
 
   return async (...args) => {
-    /** @type {worker.Worker} */
-    let w;
-
     if (availableWorkers.size) {
-      w = availableWorkers.keys().next().value;
-      const timeout = /** @type {NodeJS.Timeout} */ (availableWorkers.get(w));
+      /** @type {worker.Worker} */
+      const w = availableWorkers.keys().next().value;
+      const timeout = availableWorkers.get(w);
       availableWorkers.delete(w);
-      clearTimeout(timeout);
-    } else if (activeWorkers < o.tasks) {
-      if (isModule) {
-        w = new worker.Worker(workerTarget, {workerData: {dep}});
-      } else {
-        // In commonJS mode, we have to _again_ require the script, as the Worker ctor incorrectly
-        // only allows ".js" (which attempts to run as a /module/, because of `type: module`) or
-        // ".mjs" extensions (which is always a module).
-        // This will probably be fixed in a future Node. Sounds like a bug.
-        const code = `require(${JSON.stringify(workerTarget)});`;
-        w = new worker.Worker(code, {workerData: {dep}, eval: true});
-      }
-      ++activeWorkers;
-    } else {
-      return new Promise((resolve) => {
-        pendingTasks.push({args, resolve});
-      });
+      timeout && clearTimeout(timeout);
+      return enact(w, args);
     }
 
-    return enact(w, args);
+    // Start a new worker, but still push the work onto the queue for when it's ready.
+    if (activeWorkers < o.tasks) {
+      prepareWorker();
+    }
+
+    return new Promise((resolve) => {
+      pendingTasks.push({args, resolve});
+    });
   };
 
   /**
@@ -114,9 +119,13 @@ export function pool(dep, options) {
    * @param {worker.Worker} w
    */
   function maybeTerimateWorker(w) {
+    if (activeWorkers > o.minTasks) {
+      w.terminate();
+      availableWorkers.delete(w);
+    } else {
+      availableWorkers.set(w, undefined);
+    }
     --activeWorkers;
-    w.terminate();
-    availableWorkers.delete(w);
   }
 
   /**
@@ -128,12 +137,30 @@ export function pool(dep, options) {
       // There's an immediate task, consume it and go.
       const {args, resolve} = immediateTask;
       resolve(enact(w, args));
-    } else if (o.expiry) {
+    } else if (isFinite(o.expiry)) {
       // Otherwise, put it into our queue to be deleted soon.
       const timeout = setTimeout(maybeTerimateWorker.bind(null, w), o.expiry);
       availableWorkers.set(w, timeout);
     } else {
-      maybeTerimateWorker(w);
+      availableWorkers.set(w, undefined);
     }
   }
+}
+
+
+/**
+ * @param {string} dep
+ */
+function createWorker(dep) {
+  let w;
+  if (isModule) {
+    return new worker.Worker(workerTarget, {workerData: {dep}});
+  }
+
+  // In commonJS mode, we have to _again_ require the script, as the Worker ctor incorrectly
+  // only allows ".js" (which attempts to run as a /module/, because of `type: module`) or
+  // ".mjs" extensions (which is always a module).
+  // This will probably be fixed in a future Node. Sounds like a bug.
+  const code = `require(${JSON.stringify(workerTarget)});`;
+  return new worker.Worker(code, {workerData: {dep}, eval: true});
 }

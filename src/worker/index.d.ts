@@ -3,7 +3,7 @@
 export interface PoolOptions {
 
   /**
-   * Minimum number of tasks to keep around.
+   * Minimum number of tasks to keep around. Task startup can be expensive. Default of one.
    */
   minTasks: number,
 
@@ -16,8 +16,11 @@ export interface PoolOptions {
   /**
    * Kill an inactive task after this amount of time. Default is zero (but will be reused if
    * there's immediately pending tasks), increase if your tasks have high setup costs.
+   *
+   * This can be `Infinity` to keep tasks around forever.
    */
   expiry: number,
+
 }
 
 /**

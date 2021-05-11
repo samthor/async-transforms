@@ -21,6 +21,7 @@ import(dep)
           .catch((error) => port.postMessage({error}))
           .then(() => port.close());
     });
+    parentPort.postMessage({ok: true});
   })
   .catch((error) => {
     // Failure mode: the module couldn't be imported, complain loudly.
