@@ -74,22 +74,24 @@ For example:
 ```js
 import {pool} from 'async-transforms/worker';
 
-const compilationPool = pool(path.resolve('./compile.js'));
+const asyncCompile = pool(path.resolve('./compile.js'), {tasks: 2});
 
 // use directly
-compilationPool(123, {tasks: 2})
-    .then((result) => console.info('result from passing value to worker', result));
+const result = await asyncCompile('input', 'all', 'args', 'are', 'passed');
 
 // or as part of a transform
 stream.Readable.from([object1, object2])
-    .pipe(transforms.map(compilationPool))
+    .pipe(transforms.map(asyncCompile))
     .pipe(transforms.map(() => {
       // do something with the result
     }));
 ```
 
 The pool invokes the default export (or `module.exports` for CJS) of the target file.
-By default, it utilizes 75% of your local CPUs, but set `tasks` to control this—use a fraction from 0-1 to set a ratio, and higher for absolute.
+By default, it creates a maximum number of workers equal to 75% of your local CPUs, but set `tasks` to control this—use a fraction from 0-1 to set a ratio, and higher integers for an absolute number.
+
+You can also specify `minTasks` to always keep a number of hot workers around.
+This number can only be an integer, and defaults to 1.
 
 Use this for CPU-bound tasks like JS minification.
 
