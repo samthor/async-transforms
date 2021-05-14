@@ -1,4 +1,4 @@
-[![Build](https://api.travis-ci.org/samthor/async-transforms.svg?branch=master)](https://travis-ci.org/samthor/async-transforms)
+[![Node.JS CI](https://github.com/samthor/async-transforms/actions/workflows/tests.yml/badge.svg)](https://github.com/samthor/async-transforms/actions/workflows/tests.yml)
 
 Asynchronous stream transforms for Node.
 Allows `async` handlers and parallel execution, useful for build systems like Gulp and friends.
