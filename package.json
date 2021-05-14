@@ -1,6 +1,6 @@
 {
   "name": "async-transforms",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Asynchronous stream transforms",
   "type": "module",
   "module": "./lib/transforms.js",
