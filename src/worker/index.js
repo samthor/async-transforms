@@ -51,6 +51,7 @@ export function pool(dep, options) {
     throw new TypeError(`cannot load worker with relative path: ${dep}`);
   }
 
+  let preparingNewWorker = false;
   let activeWorkers = 0;
 
   /** @type {Map<worker.Worker, NodeJS.Timeout|undefined>} */
@@ -63,6 +64,7 @@ export function pool(dep, options) {
       if (ok !== true) {
         throw new Error(`got non-ok: ${ok}`);
       }
+      preparingNewWorker = false;
       releaseWorker(w);
     });
   };
@@ -84,7 +86,8 @@ export function pool(dep, options) {
     }
 
     // Start a new worker, but still push the work onto the queue for when it's ready.
-    if (activeWorkers < o.tasks) {
+    if (!preparingNewWorker && activeWorkers < o.tasks) {
+      preparingNewWorker = true;
       prepareWorker();
     }
 

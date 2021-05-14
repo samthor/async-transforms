@@ -159,7 +159,7 @@ export function filter(handler, options) {
  *
  * This assumes object mode and does not validate or check encoding.
  *
- * @param {function(!Array<?>): (!Array<?>|!Promise<!Array<?>>)} handler
+ * @param {function(any[]): (Iterable<any>|Promise<Iterable<any>>)} handler
  * @return {!stream.Transform}
  */
 export function gate(handler) {

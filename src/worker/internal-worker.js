@@ -29,4 +29,6 @@ import(dep)
       port.postMessage({error});
       port.close();
     });
+    parentPort.postMessage({ok: false});
+    throw error;
   });

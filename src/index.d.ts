@@ -40,4 +40,4 @@ export function gate(handler: (arg: any[]) => Iterable<any>|Promise<Iterable<any
 /**
  * Returns a helper transform that generates an Array from piped data.
  */
-export function toArray(): {stream: stream.Transform, promise: Promise<Iterable<any>>};
+export function toArray(): {stream: stream.Transform, promise: Promise<any[]>};
