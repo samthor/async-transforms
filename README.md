@@ -96,3 +96,4 @@ This number can only be an integer, and defaults to 1.
 Use this for CPU-bound tasks like JS minification.
 
 This doesn't really belong in this module.
+This can hold your binary 'open': if you're using the pool, be sure to `process.exit()` when you're done.
