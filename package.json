@@ -4,7 +4,7 @@
   "description": "Asynchronous stream transforms",
   "type": "module",
   "module": "./lib/transforms.js",
-  "main": "./require/transforms.cjs",
+  "main": "./require/index.cjs",
   "types": "src/index.d.ts",
   "exports": {
     ".": {
