@@ -8,6 +8,8 @@ if (worker.isMainThread) {
  * @param {number} x
  */
 export default async function(x) {
-  await new Promise((r) => setTimeout(r, 10));
+  // try to come back in reverse order
+  const delay = 40 - x;
+  await new Promise((r) => setTimeout(r, delay));
   return x + 10;
 }

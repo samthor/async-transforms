@@ -205,13 +205,27 @@ test('non-object map', async (t) => {
 });
 
 test('worker', async (t) => {
-  const r = stream.Readable.from([5, 6, 7]);
+  const sourceData = [5, 6, 7, 8, 9, 10];
+  const outputData = [15, 16, 17, 18, 19, 20];
 
   const absolutePath = String(import.meta.url).replace(/^file:\/\//, '');
   const dirname = path.dirname(absolutePath);
 
   const ext = worker.pool(path.join(dirname, './lib/_worker.js'), {tasks: 2});
-  const s = r.pipe(transforms.map(ext));
 
-  t.deepEqual(await resultOf(s), [15, 16, 17]);
+  // transforms.map doesn't by default guarantee order
+  const sAny = stream.Readable.from(sourceData).pipe(transforms.map(ext));
+  const resultAny = await resultOf(sAny);
+
+  // It's incredibly unlikely that this is ordered properly, because we return results in reverse
+  // order via timeout.
+  t.notDeepEqual(resultAny, outputData);
+
+  resultAny.sort();
+  t.deepEqual(resultAny, outputData);
+
+  // but we can test with the flag too
+  const s = stream.Readable.from(sourceData).pipe(transforms.map(ext, {order: true}));
+  const result = await resultOf(s);
+  t.deepEqual(result, outputData);
 });
