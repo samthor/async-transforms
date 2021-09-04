@@ -205,13 +205,13 @@ test('non-object map', async (t) => {
 });
 
 test('worker', async (t) => {
-  const sourceData = [5, 6, 7, 8, 9, 10];
-  const outputData = [15, 16, 17, 18, 19, 20];
+  const sourceData = [80, 50, 40, 40, 20, 10, 0, 0, 0];
+  const outputData = [10, 10, 10, 20, 30, 50, 50, 60, 90];  // +10 on all
 
   const absolutePath = String(import.meta.url).replace(/^file:\/\//, '');
   const dirname = path.dirname(absolutePath);
 
-  const ext = worker.pool(path.join(dirname, './lib/_worker.js'), {tasks: 2});
+  const ext = worker.pool(path.join(dirname, './lib/_worker.js'), {tasks: 3});
 
   // transforms.map doesn't by default guarantee order
   const sAny = stream.Readable.from(sourceData).pipe(transforms.map(ext));
@@ -221,11 +221,12 @@ test('worker', async (t) => {
   // order via timeout.
   t.notDeepEqual(resultAny, outputData);
 
-  resultAny.sort();
-  t.deepEqual(resultAny, outputData);
+  resultAny.sort((a, b) => a - b);
+  t.deepEqual(resultAny, outputData, 'two arrays should have same data');
 
   // but we can test with the flag too
   const s = stream.Readable.from(sourceData).pipe(transforms.map(ext, {order: true}));
   const result = await resultOf(s);
+  result.reverse();
   t.deepEqual(result, outputData);
 });
